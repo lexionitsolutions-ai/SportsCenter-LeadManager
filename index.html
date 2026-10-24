@@ -1,42 +1,111 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#bd2935">
   <title>Sports Centre | Lead Manager</title>
-  <link rel="stylesheet" href="style.css?v=e6581f46416b">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css?v=3f8f81939bd2">
 </head>
 <body>
+  <a class="skip-link" href="#mainContent">Skip to content</a>
   <header class="app-header">
-    <div class="header-inner"><div class="brand-lockup"><img class="brand-logo" src="assets/sports-centre-logo.svg" alt="Sports Centre logo" width="48" height="52"><div><strong class="brand">Sports Centre</strong><span class="app-name">Lead Manager</span></div></div><div class="header-actions"><span id="connection" class="connection">Not connected</span><button id="refreshBtn" class="secondary" type="button">Refresh</button></div></div>
-    <nav class="tabs" aria-label="Main navigation"><button class="nav-item active" data-tab="enquiries">Enquiries</button><button class="nav-item" data-tab="followups">Follow-ups <span id="navCount" class="nav-count">0</span></button></nav>
+    <div class="header-inner">
+      <div class="brand-lockup">
+        <img class="brand-logo" src="assets/sports-centre-logo.svg" alt="Sports Centre logo" width="40" height="44">
+        <div><strong class="brand">Sports Centre</strong><span class="app-name">Lead Manager</span></div>
+      </div>
+      <div class="header-actions">
+        <span id="connection" class="connection" role="status" aria-live="polite">Not connected</span>
+        <button id="refreshBtn" class="secondary" type="button"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M20 7v5h-5M4 17v-5h5"/><path d="M6.1 7a7 7 0 0 1 11.5-1L20 9M4 15l2.4 3A7 7 0 0 0 18 17"/></svg>Refresh</button>
+      </div>
+    </div>
+    <nav class="tabs" aria-label="Main navigation">
+      <button class="nav-item active" data-tab="enquiries" type="button">New enquiry</button>
+      <button class="nav-item" data-tab="followups" type="button">Follow-ups <span id="navCount" class="nav-count" aria-label="Due and overdue leads">0</span></button>
+    </nav>
   </header>
-  <div class="shell">
-    <main>
-      <div class="page-heading"><h1 id="pageTitle">New enquiry</h1><span id="todayLabel"></span></div>
-      <div id="modeBanner" class="mode-banner" role="status"><span id="connectionHelp">Connecting to Google Sheets...</span><button id="retryConnection" class="secondary" type="button" hidden>Retry connection</button></div>
-      <section id="enquiriesPanel" class="enquiry-layout" aria-label="Enquiries">
-        <article class="panel form-panel">
-          <form id="enquiryForm">
-            <h2 class="form-section-title">Customer details</h2>
-            
-            <div class="form-grid"><label>Customer name <b>*</b><input id="name" name="name" autocomplete="name" placeholder="e.g. Rahul Patil" maxlength="100" required></label><label>Contact number <b>*</b><div class="phone-field"><span>+91</span><input id="contact" name="contact" type="tel" autocomplete="tel-national" placeholder="10-digit mobile number" inputmode="tel" maxlength="16" required></div></label></div>
-            <h2 class="form-section-title enquiry-section">Enquiry details</h2>
-            <label class="interest-label">Interested in <b>*</b><select id="interestedIn" name="interestedIn" required><option value="">Select a service</option></select></label>
-            
-            <div class="form-grid"><label>Follow-up date <b>*</b><input id="followUpDate" name="followUpDate" type="date" required></label><label>Enquiry source<select id="source" name="source"><option>Walk-in</option><option>Phone call</option><option>WhatsApp</option><option>Instagram</option><option>Google</option><option>Referral</option><option>Other</option></select></label></div>
-            <label class="notes-label">Requirements / notes <span class="optional">Optional</span><textarea id="notes" name="notes" rows="3" maxlength="2000" placeholder="What does the customer need?"></textarea></label>
-            <div class="form-footer"><p>A WhatsApp message will be ready after saving.</p><button class="primary" id="saveEnquiry" type="submit">Save enquiry</button></div>
-          </form>
-        </article>
-      </section>
-      <section id="followupsPanel" hidden aria-label="Follow-ups"><div class="stats" aria-label="Lead summary"><div>Yesterday<strong id="yesterdayStat">0</strong></div><div>Today<strong id="todayStat">0</strong></div><div>Tomorrow<strong id="tomorrowStat">0</strong></div><div>Overdue<strong id="overdueStat">0</strong></div><div>Converted<strong id="wonStat">0</strong></div><div>Total enquiries<strong id="totalStat">0</strong></div></div><article class="panel followup-panel"><div class="filter-bar" id="filters"><button class="filter active" data-filter="today">Today</button><button class="filter" data-filter="yesterday">Yesterday</button><button class="filter" data-filter="overdue">Overdue</button><button class="filter" data-filter="tomorrow">Tomorrow</button><button class="filter" data-filter="pending">All open</button><button class="filter" data-filter="converted">Converted</button><button class="filter" data-filter="all">All leads</button></div><div class="search-row"><label class="search-label">Search<input id="search" type="search" placeholder="Search name, phone or service…"></label><label class="filter-date">Follow-up on <input id="dateFilter" type="date"></label><button id="clearFilters" class="secondary">Clear</button></div><div class="list-caption"><div><span>SHOWING</span><h2 id="filterTitle">Today</h2></div><span id="resultCount"></span></div><div id="leadList" class="lead-list"></div></article></section>
-    </main>
-  </div>
-  <dialog id="updateDialog"><form id="updateForm"><div class="dialog-top"><div><h2 id="updateTitle">Update follow-up</h2></div><button type="button" class="icon-btn" data-close="updateDialog" aria-label="Close">×</button></div><p id="updateContact" class="muted"></p><label>Status<select id="updateStatus"><option>New</option><option>Contacted</option><option>Quotation sent</option><option>Call later</option><option>Converted</option><option>Not interested</option><option>Wrong number</option></select></label><label>Next follow-up date<input id="updateDate" type="date" required></label><label>Follow-up notes / reason <b>*</b><textarea id="updateReason" rows="3" maxlength="2000" required placeholder="What was discussed? Why is another follow-up needed?"></textarea></label><details class="history-block"><summary>Previous follow-ups</summary><div id="historyList"></div></details><div class="dialog-actions"><button type="button" class="secondary" data-close="updateDialog">Cancel</button><button class="primary" id="saveUpdate" type="submit">Save follow-up</button></div></form></dialog>
-  <dialog id="whatsappDialog" aria-labelledby="whatsappTitle"><h2 id="whatsappTitle">Send WhatsApp message?</h2><div class="dialog-actions"><button type="button" class="secondary" data-close="whatsappDialog">Cancel</button><a id="whatsappLink" class="primary whatsapp" target="_blank" rel="noopener noreferrer">Send WhatsApp message</a></div></dialog>
+  <main id="mainContent" tabindex="-1">
+    <div class="page-heading"><h1 id="pageTitle">New enquiry</h1><span id="todayLabel"></span></div>
+    <div id="modeBanner" class="mode-banner" role="status">
+      <span id="connectionHelp">Connecting to Google Sheets...</span>
+      <button id="retryConnection" class="secondary" type="button" hidden>Retry connection</button>
+    </div>
+    <section id="enquiriesPanel" aria-label="New enquiry">
+      <article class="panel form-panel">
+        <form id="enquiryForm">
+          <section aria-labelledby="customerHeading">
+            <div class="form-section-heading"><h2 id="customerHeading">Customer details</h2><span class="form-help"><b>*</b> Required fields</span></div>
+            <div class="form-grid">
+              <label for="name">Customer name <b>*</b><input id="name" name="name" autocomplete="name" placeholder="e.g. Rahul Patil" maxlength="100" required></label>
+              <label for="contact">Contact number <b>*</b><span class="phone-field"><span>+91</span><input id="contact" name="contact" type="tel" inputmode="tel" autocomplete="tel-national" placeholder="10-digit mobile number" maxlength="16" required></span></label>
+            </div>
+          </section>
+          <section class="enquiry-section" aria-labelledby="enquiryHeading">
+            <div class="form-section-heading"><h2 id="enquiryHeading">Enquiry details</h2></div>
+            <div class="form-grid">
+              <label for="interestedIn">Interested in <b>*</b><select id="interestedIn" name="interestedIn" required><option value="">Select a service</option></select></label>
+              <label for="followUpDate">Follow-up date <b>*</b><input id="followUpDate" name="followUpDate" type="date" required></label>
+              <label for="source">Enquiry source<select id="source" name="source"><option>Walk-in</option><option>Phone call</option><option>WhatsApp</option><option>Instagram</option><option>Google</option><option>Referral</option><option>Other</option></select></label>
+              <label class="full-width" for="notes">Requirements / notes <span class="optional">(optional)</span><textarea id="notes" name="notes" rows="3" maxlength="2000" placeholder="Equipment, location, budget or other requirements"></textarea></label>
+            </div>
+          </section>
+          <div class="form-footer"><p>A WhatsApp message will be ready after saving.</p><button class="primary" id="saveEnquiry" type="submit">Save enquiry</button></div>
+        </form>
+      </article>
+    </section>
+    <section id="followupsPanel" hidden aria-label="Follow-ups">
+      <div class="stats" aria-label="Lead summary">
+        <div><span>Yesterday</span><strong id="yesterdayStat">0</strong></div>
+        <div><span>Today</span><strong id="todayStat">0</strong></div>
+        <div><span>Tomorrow</span><strong id="tomorrowStat">0</strong></div>
+        <div><span>Overdue</span><strong id="overdueStat">0</strong></div>
+        <div><span>Converted</span><strong id="wonStat">0</strong></div>
+        <div><span>Total enquiries</span><strong id="totalStat">0</strong></div>
+      </div>
+      <article class="panel followup-panel">
+        <div class="workspace-controls">
+          <div class="filter-bar" id="filters" aria-label="Filter leads">
+            <button class="filter active" data-filter="today" type="button">Today</button>
+            <button class="filter" data-filter="yesterday" type="button">Yesterday</button>
+            <button class="filter" data-filter="overdue" type="button">Overdue</button>
+            <button class="filter" data-filter="tomorrow" type="button">Tomorrow</button>
+            <button class="filter" data-filter="pending" type="button">All open</button>
+            <button class="filter" data-filter="converted" type="button">Converted</button>
+            <button class="filter" data-filter="all" type="button">All leads</button>
+          </div>
+          <div class="search-row">
+            <label class="search-label" for="search">Search leads<span class="search-field"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 4 4"/></svg><input id="search" type="search" placeholder="Name, phone number or service"></span></label>
+            <label class="filter-date" for="dateFilter">Follow-up date<input id="dateFilter" type="date"></label>
+            <button id="clearFilters" class="secondary" type="button">Clear</button>
+          </div>
+        </div>
+        <div class="list-caption"><h2 id="filterTitle">Today</h2><span id="resultCount" aria-live="polite"></span></div>
+        <div id="leadList" class="lead-list"></div>
+      </article>
+    </section>
+  </main>
+  <dialog id="updateDialog" aria-labelledby="updateDialogHeading">
+    <form id="updateForm">
+      <div class="dialog-top"><h2 id="updateDialogHeading">Update follow-up</h2><button type="button" class="icon-btn" data-close="updateDialog" aria-label="Close update follow-up">&times;</button></div>
+      <div class="dialog-customer"><p id="updateTitle"></p><p id="updateContact" class="muted"></p></div>
+      <div class="form-grid">
+        <label for="updateStatus">Status<select id="updateStatus"><option>New</option><option>Contacted</option><option>Quotation sent</option><option>Call later</option><option>Converted</option><option>Not interested</option><option>Wrong number</option></select></label>
+        <label for="updateDate">Next follow-up date<input id="updateDate" type="date" required></label>
+        <label class="full-width" for="updateReason">Follow-up notes / reason <b>*</b><textarea id="updateReason" rows="3" maxlength="2000" required placeholder="What was discussed? What is the next step?"></textarea></label>
+      </div>
+      <details class="history-block"><summary>Previous follow-ups</summary><div id="historyList" tabindex="0" role="region" aria-label="Follow-up history"></div></details>
+      <div class="dialog-actions"><button type="button" class="secondary" data-close="updateDialog">Cancel</button><button class="primary" id="saveUpdate" type="submit">Save follow-up</button></div>
+    </form>
+  </dialog>
+  <dialog id="whatsappDialog" aria-labelledby="whatsappTitle">
+    <h2 id="whatsappTitle">Send WhatsApp message?</h2>
+    <div class="dialog-actions"><button type="button" class="secondary" data-close="whatsappDialog">Cancel</button><a id="whatsappLink" class="primary whatsapp" target="_blank" rel="noopener noreferrer">Send WhatsApp message</a></div>
+  </dialog>
   <div id="toast" role="status" aria-live="polite" hidden></div>
-  <script src="script.js?v=b676e7b7394d"></script>
+  <script src="script.js?v=a31d79249b5b"></script>
 </body>
 </html>

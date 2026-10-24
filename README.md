@@ -38,4 +38,6 @@ The SC logo asset is a vector recreation of the supplied shield. App.html embeds
 
 ## Verification
 
+The UI uses an Inter/system-font light theme with Sports Centre red accents. The enquiry form retains its original fields and validation; desktop lead records use a table and the same records become cards below 900px. KPI cards use six columns on wide desktops, three on tablets, and two on phones. The update dialog keeps its history in a scrollable region. No backend fields, database schema, routes, filters, or message content were changed by the visual refinement.
+
 Run `node --check script.js`, `node test.cjs`, and `node transport.test.cjs`. Tests cover public HTTP reads/creates/updates, validation, history, duplicates, stale-update checks, confirmed saves, and preserved forms after failures. Tests mock Sheets and HTTP; a real sheet write still requires the deployment steps above.

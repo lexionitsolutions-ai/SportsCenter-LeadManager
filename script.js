@@ -48,13 +48,13 @@ async function api(action,payload={}) {
 }
 async function loadLeads() {
   if(state.busy||state.loading)return false;
-  state.loading=true;syncButtons();$('connection').textContent='Connecting...';$('modeBanner').hidden=false;$('connectionHelp').textContent='Connecting to Google Sheets...';$('retryConnection').hidden=true;
+  state.loading=true;syncButtons();$('connection').textContent='Connecting...';$('connection').setAttribute('data-state','loading');$('modeBanner').setAttribute('data-state','loading');$('modeBanner').hidden=false;$('connectionHelp').textContent='Connecting to Google Sheets...';$('retryConnection').hidden=true;
   try {
     const result=await api('getLeads');
     if(!Array.isArray(result.leads))throw Error('Invalid response from the script. Check the deployed Code.gs version.');
-    state.leads=result.leads;state.ready=true;render();$('connection').textContent='Google Sheets connected';$('modeBanner').hidden=true;return true;
+    state.leads=result.leads;state.ready=true;render();$('connection').textContent='Google Sheets connected';$('connection').setAttribute('data-state','connected');$('modeBanner').hidden=true;return true;
   } catch(error) {
-    state.ready=false;$('connection').textContent='Not connected';$('modeBanner').hidden=false;
+    state.ready=false;$('connection').textContent='Not connected';$('connection').setAttribute('data-state','error');$('modeBanner').setAttribute('data-state','error');$('modeBanner').hidden=false;
     const message=error.code==='AUTH_REQUIRED'?'The deployed script still requires a code. Replace Code.gs with the latest version and deploy a new version.':error.message;
     $('connectionHelp').textContent=message;$('retryConnection').hidden=false;toast(message,true);
     return false;
@@ -72,12 +72,24 @@ function render() {
   const leads=filteredLeads();$('resultCount').textContent=leads.length+' '+(leads.length===1?'lead':'leads');
   const labels={today:'Today',yesterday:'Yesterday',tomorrow:'Tomorrow',overdue:'Overdue',pending:'All open',converted:'Converted',all:'All leads'};
   $('filterTitle').textContent=$('dateFilter').value?displayDate($('dateFilter').value):labels[state.filter];
-  const detail=(label,value)=>`<div><span class="detail-label">${label}</span><span class="detail-value">${escapeHtml(value)}</span></div>`;
-  $('leadList').innerHTML=leads.length?leads.map(l=>{
-    const late=openLead(l)&&l.followUpDate&&l.followUpDate<t;
-    return `<article class="lead-card"><div class="lead-top"><div><h3>${escapeHtml(l.name)}</h3><a href="tel:+91${phoneNumber(l.contact)}">${escapeHtml(l.contact)}</a></div><div class="badges"><span class="badge ${l.status==='Converted'?'converted':''}">${escapeHtml(l.status)}</span>${late?'<span class="badge overdue">Overdue</span>':''}</div></div><div class="lead-info">${detail('Requirements / notes',l.notes||'No notes added')}${detail('Interested in',l.interestedIn.join(', '))}${detail('Source',l.source)}${detail('Follow-up date',displayDate(l.followUpDate))}${detail('Latest follow-up',l.history[0]?.reason||'No follow-up recorded')}</div><div class="lead-actions"><a class="secondary call-action" href="tel:+91${phoneNumber(l.contact)}">Call</a><button class="secondary whatsapp-action" data-whatsapp="${escapeHtml(l.id)}">WhatsApp</button><button class="primary" data-update="${escapeHtml(l.id)}">Update</button></div></article>`;
-  }).join(''):'<div class="empty-state"><strong>No leads found.</strong>Try another filter or add a new enquiry.</div>';
+  $('leadList').innerHTML=leads.length?renderLeadTable(leads,t):'<div class="empty-state"><strong>No leads found.</strong>Try another filter or add a new enquiry.</div>';
   document.querySelectorAll('[data-filter]').forEach(b=>{b.classList.toggle('active',!$('dateFilter').value&&b.dataset.filter===state.filter);b.setAttribute('aria-pressed',String(!$('dateFilter').value&&b.dataset.filter===state.filter));});
+}
+// One semantic table becomes cards at smaller widths; action delegation stays unchanged.
+function renderLeadTable(leads,today) {
+  const rows=leads.map(lead=>{
+    const overdue=openLead(lead)&&lead.followUpDate&&lead.followUpDate<today;
+    const statusClass=lead.status.toLowerCase().replace(/[^a-z0-9]+/g,'-');
+    const latest=lead.history[0]?.reason||'No follow-up recorded';
+    return `<tr class="lead-row">
+      <td class="lead-customer"><strong class="customer-name">${escapeHtml(lead.name)}</strong><a class="customer-phone" href="tel:+91${phoneNumber(lead.contact)}">${escapeHtml(lead.contact)}</a><span class="cell-meta"><span class="meta-label">Source:</span> ${escapeHtml(lead.source)}</span></td>
+      <td class="lead-service" data-label="Interested in"><span class="cell-primary">${escapeHtml(lead.interestedIn.join(', '))}</span><span class="cell-meta"><span class="meta-label">Requirements:</span> ${escapeHtml(lead.notes||'No notes added')}</span></td>
+      <td class="lead-followup" data-label="Follow-up"><span class="cell-primary cell-date">${escapeHtml(displayDate(lead.followUpDate))}</span><span class="cell-meta"><span class="meta-label">Latest:</span> ${escapeHtml(latest)}</span></td>
+      <td class="lead-status"><div class="badges"><span class="badge ${statusClass}">${escapeHtml(lead.status)}</span>${overdue?'<span class="badge overdue">Overdue</span>':''}</div></td>
+      <td class="lead-action-cell"><div class="lead-actions"><a class="secondary call-action" href="tel:+91${phoneNumber(lead.contact)}" aria-label="Call ${escapeHtml(lead.name)}">Call</a><button class="secondary whatsapp-action" type="button" data-whatsapp="${escapeHtml(lead.id)}" aria-label="WhatsApp ${escapeHtml(lead.name)}">WhatsApp</button><button class="primary" type="button" data-update="${escapeHtml(lead.id)}" aria-label="Update follow-up for ${escapeHtml(lead.name)}">Update</button></div></td>
+    </tr>`;
+  }).join('');
+  return `<div class="table-shell"><table class="leads-table"><caption class="sr-only">Leads with contact details, requirements, follow-up dates, status and actions</caption><thead><tr><th scope="col">Customer</th><th scope="col">Interest / requirements</th><th scope="col">Follow-up</th><th scope="col">Status</th><th scope="col">Actions</th></tr></thead><tbody>${rows}</tbody></table></div>`;
 }
 function upsert(lead){const i=state.leads.findIndex(l=>l.id===lead.id);if(i<0)state.leads.unshift(lead);else state.leads[i]=lead;render();}
 function showWhatsApp(lead){state.lastSaved=lead;$('whatsappLink').href=whatsappUrl(lead);$('whatsappDialog').showModal();}
