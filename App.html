@@ -155,7 +155,7 @@ summary { font-size:14px; font-weight:600; cursor:pointer; }
   <div class="shell">
     <main>
       <div class="page-heading"><h1 id="pageTitle">New enquiry</h1><span id="todayLabel"></span></div>
-      <div id="modeBanner" class="mode-banner"><span id="connectionHelp">Connecting to Google Sheets...</span></div>
+      <div id="modeBanner" class="mode-banner" role="status"><span id="connectionHelp">Connecting to Google Sheets...</span><button id="retryConnection" class="secondary" type="button" hidden>Retry connection</button></div>
       <section id="enquiriesPanel" class="enquiry-layout" aria-label="Enquiries">
         <article class="panel form-panel">
           <form id="enquiryForm">
@@ -189,7 +189,7 @@ const API_URL = 'https://script.google.com/macros/s/AKfycbxKL-uC53lSZCHTMwSUYcgN
 try{localStorage.removeItem('sports-centre-access');}catch{}
 try{sessionStorage.removeItem('sports-centre-access');}catch{}
 const live = typeof google !== 'undefined' && !!google.script?.run;
-const state = { leads: [], filter: 'today', tab: 'enquiries', editing: null, busy: false, ready: false, lastSaved: null, requestId: null, updateRequestId: null };
+const state = { leads: [], filter: 'today', tab: 'enquiries', editing: null, busy: false, loading: false, ready: false, lastSaved: null, requestId: null, updateRequestId: null };
 const $ = id => document.getElementById(id);
 function todayKey() { return new Intl.DateTimeFormat('en-CA', {timeZone:'Asia/Kolkata',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date()); }
 function addDays(key, amount) { const d = new Date(key+'T12:00:00Z'); d.setUTCDate(d.getUTCDate()+amount); return d.toISOString().slice(0,10); }
@@ -207,10 +207,13 @@ function apiError(result) {
 }
 async function api(action,payload={}) {
   const request={action,...payload};
-  if(live) return new Promise((resolve,reject)=>google.script.run.withSuccessHandler(result=>{if(result.success)resolve(result);else reject(apiError(result));}).withFailureHandler(e=>reject(Error(e.message||'Connection failed.'))).handleRequest(request));
+  if(live) return new Promise((resolve,reject)=>{
+    const timer=setTimeout(()=>reject(Error('Google Sheets did not respond within 20 seconds. Please retry.')),20000);
+    google.script.run.withSuccessHandler(result=>{clearTimeout(timer);if(result.success)resolve(result);else reject(apiError(result));}).withFailureHandler(e=>{clearTimeout(timer);reject(Error(e.message||'Connection failed.'));}).handleRequest(request);
+  });
   // URL-encoded POST avoids a JSON preflight; Google redirects its JSON response.
   const body=new URLSearchParams({payload:JSON.stringify(request)});
-  const controller=new AbortController();const timeout=setTimeout(()=>controller.abort(),45000);
+  const controller=new AbortController();const timeout=setTimeout(()=>controller.abort(),20000);
   try {
     const response=await fetch(API_URL,{method:'POST',body,redirect:'follow',credentials:'omit',signal:controller.signal});
     if(!response.ok)throw Error('Google Sheets connection failed (HTTP '+response.status+'). Check your Apps Script deployment.');
@@ -219,12 +222,13 @@ async function api(action,payload={}) {
     return result;
   } catch(error) {
     if(error.name==='AbortError')throw Error('Google Sheets did not respond in time. Your form is kept; retry with the same details.');
+    if(error instanceof TypeError)throw Error('The browser could not reach Google Sheets. Check your internet connection or retry with browser extensions disabled.');
     throw error;
   } finally {clearTimeout(timeout);}
 }
 async function loadLeads() {
-  if(state.busy)return false;
-  $('refreshBtn').disabled=true;$('connection').textContent='Connecting...';
+  if(state.busy||state.loading)return false;
+  state.loading=true;syncButtons();$('connection').textContent='Connecting...';$('modeBanner').hidden=false;$('connectionHelp').textContent='Connecting to Google Sheets...';$('retryConnection').hidden=true;
   try {
     const result=await api('getLeads');
     if(!Array.isArray(result.leads))throw Error('Invalid response from the script. Check the deployed Code.gs version.');
@@ -232,11 +236,11 @@ async function loadLeads() {
   } catch(error) {
     state.ready=false;$('connection').textContent='Not connected';$('modeBanner').hidden=false;
     const message=error.code==='AUTH_REQUIRED'?'The deployed script still requires a code. Replace Code.gs with the latest version and deploy a new version.':error.message;
-    $('connectionHelp').textContent=message;toast(message,true);
+    $('connectionHelp').textContent=message;$('retryConnection').hidden=false;toast(message,true);
     return false;
-  } finally {syncButtons();}
+  } finally {state.loading=false;syncButtons();}
 }
-function syncButtons(){ $('saveEnquiry').disabled=state.busy||!state.ready;$('saveUpdate').disabled=state.busy||!state.ready;$('refreshBtn').disabled=state.busy; }
+function syncButtons(){ $('saveEnquiry').disabled=state.busy||state.loading||!state.ready;$('saveUpdate').disabled=state.busy||state.loading||!state.ready;$('refreshBtn').disabled=state.busy||state.loading;$('retryConnection').disabled=state.busy||state.loading; }
 function switchTab(tab) {state.tab=tab==='followups'?'followups':'enquiries';const follow=state.tab==='followups';$('enquiriesPanel').hidden=follow;$('followupsPanel').hidden=!follow;document.querySelectorAll('[data-tab]').forEach(b=>{b.classList.toggle('active',b.dataset.tab===state.tab);b.setAttribute('aria-current',b.dataset.tab===state.tab?'page':'false');});$('pageTitle').textContent=follow?'Follow-ups':'New enquiry';if(location.hash!=='#'+state.tab)history.replaceState(null,'','#'+state.tab);render();}
 function filteredLeads() {const t=todayKey(),query=$('search').value.toLowerCase().trim(),date=$('dateFilter').value;return state.leads.filter(l=>{
     const matchesDate=date?openLead(l)&&l.followUpDate===date:({today:openLead(l)&&l.followUpDate===t,yesterday:openLead(l)&&l.followUpDate===addDays(t,-1),overdue:openLead(l)&&!!l.followUpDate&&l.followUpDate<t,tomorrow:openLead(l)&&l.followUpDate===addDays(t,1),pending:openLead(l),converted:l.status==='Converted',all:true})[state.filter];
@@ -268,7 +272,7 @@ async function saveUpdate(event){event.preventDefault();if(state.busy)return;con
 function init(){
   $('interestedIn').innerHTML='<option value="">Select a service</option>'+SERVICES.map(s=>`<option value="${s}">${s}</option>`).join('');
   $('todayLabel').textContent=new Date().toLocaleDateString('en-IN',{weekday:'short',day:'numeric',month:'short',year:'numeric',timeZone:'Asia/Kolkata'});$('followUpDate').min=todayKey();$('followUpDate').value=addDays(todayKey(),1);$('modeBanner').hidden=false;
-  $('enquiryForm').addEventListener('submit',saveEnquiry);$('updateForm').addEventListener('submit',saveUpdate);$('refreshBtn').addEventListener('click',loadLeads);
+  $('enquiryForm').addEventListener('submit',saveEnquiry);$('updateForm').addEventListener('submit',saveUpdate);$('refreshBtn').addEventListener('click',loadLeads);$('retryConnection').addEventListener('click',loadLeads);
   document.querySelectorAll('[data-tab]').forEach(b=>b.addEventListener('click',()=>switchTab(b.dataset.tab)));
   $('filters').addEventListener('click',e=>{const b=e.target.closest('[data-filter]');if(b){state.filter=b.dataset.filter;$('dateFilter').value='';render();}});$('search').addEventListener('input',render);$('dateFilter').addEventListener('change',render);$('clearFilters').addEventListener('click',()=>{$('search').value='';$('dateFilter').value='';state.filter='today';render();});
   $('leadList').addEventListener('click',e=>{const b=e.target.closest('[data-update],[data-whatsapp]');if(!b||state.busy)return;const lead=state.leads.find(l=>l.id===(b.dataset.update||b.dataset.whatsapp));if(lead)b.dataset.update?openUpdate(lead):showWhatsApp(lead);});
@@ -278,7 +282,12 @@ function init(){
   $('whatsappLink').addEventListener('click',()=>$('whatsappDialog').close());
   window.addEventListener('hashchange',()=>switchTab(location.hash.slice(1)));switchTab(location.hash.slice(1));syncButtons();loadLeads();
 }
-if(typeof document!=='undefined')document.addEventListener('DOMContentLoaded',init);
+function startApp(){
+  try{init();}catch(error){
+    console.error(error);$('connection').textContent='Could not start';$('modeBanner').hidden=false;$('connectionHelp').textContent='The app could not start. Reload this page with Ctrl + F5 to get the latest version.';
+  }
+}
+if(typeof document!=='undefined')document.addEventListener('DOMContentLoaded',startApp);
 if(typeof module!=='undefined')module.exports={phoneNumber,addDays,todayKey,introduction,escapeHtml,openLead,SERVICES};
 
 </script>

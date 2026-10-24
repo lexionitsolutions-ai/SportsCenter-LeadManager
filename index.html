@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#bd2935">
   <title>Sports Centre | Lead Manager</title>
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css?v=e6581f46416b">
 </head>
 <body>
   <header class="app-header">
@@ -15,7 +15,7 @@
   <div class="shell">
     <main>
       <div class="page-heading"><h1 id="pageTitle">New enquiry</h1><span id="todayLabel"></span></div>
-      <div id="modeBanner" class="mode-banner"><span id="connectionHelp">Connecting to Google Sheets...</span></div>
+      <div id="modeBanner" class="mode-banner" role="status"><span id="connectionHelp">Connecting to Google Sheets...</span><button id="retryConnection" class="secondary" type="button" hidden>Retry connection</button></div>
       <section id="enquiriesPanel" class="enquiry-layout" aria-label="Enquiries">
         <article class="panel form-panel">
           <form id="enquiryForm">
@@ -37,6 +37,6 @@
   <dialog id="updateDialog"><form id="updateForm"><div class="dialog-top"><div><h2 id="updateTitle">Update follow-up</h2></div><button type="button" class="icon-btn" data-close="updateDialog" aria-label="Close">×</button></div><p id="updateContact" class="muted"></p><label>Status<select id="updateStatus"><option>New</option><option>Contacted</option><option>Quotation sent</option><option>Call later</option><option>Converted</option><option>Not interested</option><option>Wrong number</option></select></label><label>Next follow-up date<input id="updateDate" type="date" required></label><label>Follow-up notes / reason <b>*</b><textarea id="updateReason" rows="3" maxlength="2000" required placeholder="What was discussed? Why is another follow-up needed?"></textarea></label><details class="history-block"><summary>Previous follow-ups</summary><div id="historyList"></div></details><div class="dialog-actions"><button type="button" class="secondary" data-close="updateDialog">Cancel</button><button class="primary" id="saveUpdate" type="submit">Save follow-up</button></div></form></dialog>
   <dialog id="whatsappDialog" aria-labelledby="whatsappTitle"><h2 id="whatsappTitle">Send WhatsApp message?</h2><div class="dialog-actions"><button type="button" class="secondary" data-close="whatsappDialog">Cancel</button><a id="whatsappLink" class="primary whatsapp" target="_blank" rel="noopener noreferrer">Send WhatsApp message</a></div></dialog>
   <div id="toast" role="status" aria-live="polite" hidden></div>
-  <script src="script.js"></script>
+  <script src="script.js?v=aacead66eca5"></script>
 </body>
 </html>

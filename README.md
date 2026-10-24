@@ -30,6 +30,8 @@ Saved messages appear only after the server confirms the write. There is no brow
 
 The Pages workflow tests and publishes index.html, style.css, script.js, and assets after pushes to main. Run `python build.py` to rebuild the Google-hosted App.html after frontend edits.
 
+The build also versions the CSS and JavaScript links so browsers fetch the matching assets after an update. Connection requests time out after 20 seconds and show a persistent error with Retry connection rather than leaving the loading banner indefinitely. If a previously cached page is stuck, use Ctrl + F5 once.
+
 Keep Leads headers intact and avoid manual edits to JSON columns. Back up with spreadsheet copies or Sheets version history. Refresh loads teammates' changes. Stale updates are rejected: refresh and review the latest history before retrying. There is no automatic polling, scheduled reminder service, or automatic WhatsApp delivery. History is stored with its lead; an explicit error is returned before reaching the cell limit.
 
 The SC logo asset is a vector recreation of the supplied shield. App.html embeds it for Google hosting.
