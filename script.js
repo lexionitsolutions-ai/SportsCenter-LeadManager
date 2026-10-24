@@ -2,7 +2,7 @@
 const SERVICES = ['Gym Setup', 'Machine Equipments', 'Turf Installation', 'Sports Equipments', 'Home Gym Setup', 'Treadmills', 'Cardio Equipments', 'Mat Installation'];
 const STATUSES = ['New', 'Contacted', 'Quotation sent', 'Call later', 'Converted', 'Not interested', 'Wrong number'];
 const CLOSED = ['Converted', 'Not interested', 'Wrong number'];
-const WEBSITE = 'https://zenithfitness360.lexionitsolutions.workers.dev/?utm_source=ig&utm_medium=social&utm_content=link_in_bio&fbclid=PAdGRleAVJ1P5leHRuA2FlbQIxMQBwZG9mAmZkaWQWUQ7sUfKgu9XNtPwyAdD71XR4Vl2KqXNydGMGYXBwX2lkDzEyNDAyNDU3NDI4NzQxNAABp1A9mkMTcAKzoGKrVvxCIDYp5wCXud4nNSYMNGEVoLKEotFoZ95ZnNaZiBLp_aem_OZg-6nOFSbKYcGykYAgdfQ';
+const WEBSITE = 'https://zenithfitness360.lexionitsolutions.workers.dev/';
 const INSTAGRAM = 'https://www.instagram.com/sports_centre_kop?srtk=MWhjYW5mN2lpYmhsZA==';
 const API_URL = 'https://script.google.com/macros/s/AKfycbxKL-uC53lSZCHTMwSUYcgNJIlT7CsxgTaMRSy9wIBmgUsoEWxjBMEb5lN9sySXlbVr/exec';
 // Remove access codes remembered by older versions of this app.
@@ -19,7 +19,7 @@ function phoneNumber(value) { let n=String(value).replace(/[\s()-]/g,''); if(n.s
 function uuid() { return globalThis.crypto?.randomUUID?.() || 'sc-'+Date.now()+'-'+Math.random().toString(36).slice(2); }
 function openLead(lead) { return !CLOSED.includes(lead.status); }
 function initials(name) { return name.split(/\s+/).slice(0,2).map(s=>s[0]).join('').toUpperCase(); }
-function introduction(lead) { return `Hello ${lead.name},\n\nThank you for enquiring with *Sports Centre*!\n\nWe help you build spaces for sport and fitness, with:\n• Complete gym setups & home gyms\n• Gym machines, treadmills & cardio equipment\n• Sports equipment\n• Turf installation\n• Sports mat installation\n\nWe’ve noted your interest in *${lead.interestedIn.join(', ')}*. Our team looks forward to helping you find the right solution.\n\nExplore Zenith Fitness (our temporary reference website):\n${WEBSITE}\n\nFollow Sports Centre on Instagram:\n${INSTAGRAM}\n\nTell us more about your requirements, and let’s plan your next project.\n\nBest regards,\nTeam Sports Centre`; }
+function introduction(lead) { return `Hello ${lead.name},\n\nThank you for enquiring with *Sports Centre*!\n\nWe help you build spaces for sport and fitness, with:\n• Complete gym setups & home gyms\n• Gym machines, treadmills & cardio equipment\n• Sports equipment\n• Turf installation\n• Sports mat installation\n\nWe’ve noted your interest in *${lead.interestedIn.join(', ')}*. Our team looks forward to helping you find the right solution.\n\nExplore our Work:\n${WEBSITE}\n\nFollow Sports Centre on Instagram:\n${INSTAGRAM}\n\nTell us more about your requirements, and let’s plan your next project.\n\nBest regards,\nTeam Sports Centre`; }
 function whatsappUrl(lead, message=introduction(lead)) { return 'https://wa.me/91'+phoneNumber(lead.contact)+'?text='+encodeURIComponent(message); }
 function toast(message, error=false) { $('toast').textContent=message; $('toast').className=error?'error':''; $('toast').hidden=false; clearTimeout(toast.timer); toast.timer=setTimeout(()=>$('toast').hidden=true,error?9000:5000); }
 function apiError(result) {
