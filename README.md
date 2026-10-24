@@ -1,4 +1,4 @@
-﻿# Sports Centre Lead Manager
+# Sports Centre Lead Manager
 
 A minimal staff app for enquiries, Google Sheets storage, WhatsApp drafts, and dated follow-ups.
 
@@ -31,7 +31,7 @@ The HTTP handler and response use Google's [Web Apps](https://developers.google.
 
 - **index.html** sends URL-encoded POST requests to the supplied script URL. **Code.gs / doPost** authenticates the staff code and reads or writes the Google Sheet. The Google-hosted App.html uses google.script.run against the same handler.
 - There is **no browser-only demo saving or automatic local fallback**. A saved message appears only after the backend confirms the write. A failed request keeps the form, and retrying the same request does not create a duplicate.
-- The staff code is held in memory and, where supported, sessionStorage for the current browser tab. Use **Staff access** to change it. Staff code access is shared access: follow-up history labels these updates as Staff access code, rather than claiming an individual staff identity.
+- After a successful connection, the staff code is saved in localStorage on this browser and device so new tabs and later visits connect automatically. sessionStorage is a fallback if persistent storage is unavailable. Clearing browser data, using private browsing, changing devices, or changing the server code may require entering it again. Use **Connection** to change it or **Forget this device** to remove the saved code. Staff code access is shared access: follow-up history labels these updates as Staff access code, rather than claiming an individual staff identity.
 - Previously saved demo entries are not imported automatically. Production starts with the contents of your Leads sheet.
 
 ## Staff workflow
@@ -58,7 +58,7 @@ After changing the frontend, run `python build.py` and replace App in the script
 
 ## Troubleshooting
 
-- **Enter the correct staff access code:** run setup, check API_KEY in Script Properties, and re-enter it with Staff access.
+- **Enter the correct staff access code:** run setup, check API_KEY in Script Properties, and re-enter it with Connection.
 - **Page instead of JSON / script function not found:** the deployment still has old code, or requires a Google login for its HTTP endpoint. Replace Code.gs and publish a new version with the settings above.
 - **Run setup first:** run setup in the spreadsheet-bound editor, then retry.
 - **Failed to fetch / HTTP error:** check connection, script URL, deployment access, and whether your organisation blocks anonymous Apps Script access. Serve the folder using `python -m http.server 8080` and open `http://localhost:8080` if file-origin restrictions apply. No request uses no-cors because that would hide the save result.

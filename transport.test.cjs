@@ -8,6 +8,8 @@ for(const m of code.matchAll(/\$\('([^']+)'\)/g))assert.ok(ids.includes(m[1]),'M
 const nodes=Object.fromEntries(ids.map(id=>[id,{value:'',textContent:'',innerHTML:'',hidden:false,disabled:false,addEventListener(){},setAttribute(){},classList:{toggle(){}},showModal(){this.open=true;},close(){this.open=false;},reset(){this.wasReset=true;}}]));
 let response,posted,lastUrl;
 const ctx={console,Date,Intl,URLSearchParams,AbortController,encodeURIComponent,setTimeout:()=>0,clearTimeout(){},sessionStorage:{getItem:()=>'',setItem(){},removeItem(){}},document:{getElementById:id=>nodes[id],querySelectorAll:()=>[],addEventListener(){}},fetch:async(url,options)=>{lastUrl=url;posted=options;return response;}};
+const savedAccess={};
+ctx.localStorage={getItem:key=>savedAccess[key]||null,setItem:(key,value)=>{savedAccess[key]=value;},removeItem:key=>{delete savedAccess[key];}};
 vm.createContext(ctx);vm.runInContext(code,ctx);
 const json=value=>({ok:true,text:async()=>JSON.stringify(value)});
 (async()=>{
@@ -44,6 +46,30 @@ const json=value=>({ok:true,text:async()=>JSON.stringify(value)});
   assert.equal(nodes.enquiryForm.wasReset,false);assert.equal(nodes.whatsappDialog.open,false);
   await vm.runInContext('saveEnquiry({preventDefault(){}})',ctx);
   assert.equal(JSON.parse(posted.body.get('payload')).requestId,firstRequest);
-  assert.ok(!code.includes('readDemo')&&!code.includes('localStorage.setItem'));
-  console.log('HTTP transport, error handling, confirmed save and retry checks passed.');
+  assert.ok(!code.includes('readDemo'));
+  // A confirmed connection remembers the code, and a later page reads it automatically.
+  response=json({success:true,leads:[]});
+  await vm.runInContext('loadLeads()',ctx);
+  assert.equal(savedAccess['sports-centre-access'],'test-code');
+  const nextVisit=vm.createContext({...ctx});
+  vm.runInContext(code,nextVisit);
+  assert.equal(vm.runInContext('staffAccessCode',nextVisit),'test-code');
+  nodes.accessDialog.open=false;
+  await vm.runInContext('loadLeads()',nextVisit);
+  assert.equal(nodes.accessDialog.open,false);
+  assert.equal(nodes.connection.textContent,'Google Sheets connected');
+  assert.deepEqual(Object.keys(savedAccess),['sports-centre-access']);
+  // Invalidated codes are removed and require re-entry; network errors keep them.
+  response=json({success:false,code:'AUTH_REQUIRED',message:'Invalid code'});
+  await vm.runInContext('loadLeads()',nextVisit);
+  assert.equal(savedAccess['sports-centre-access'],undefined);
+  assert.equal(nodes.accessDialog.open,true);
+  assert.equal(nodes.saveEnquiry.disabled,true);
+  vm.runInContext("staffAccessCode='test-code';rememberAccessCode()",nextVisit);
+  response={ok:false,status:503};
+  await vm.runInContext('loadLeads()',nextVisit);
+  assert.equal(savedAccess['sports-centre-access'],'test-code');
+  vm.runInContext('clearAccessCode()',nextVisit);
+  assert.equal(savedAccess['sports-centre-access'],undefined);
+  console.log('HTTP saves, retries, remembered device access, invalidation and forget checks passed.');
 })().catch(error=>{console.error(error);process.exitCode=1;});

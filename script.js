@@ -6,7 +6,18 @@ const WEBSITE = 'https://zenithfitness360.lexionitsolutions.workers.dev/?utm_sou
 const INSTAGRAM = 'https://www.instagram.com/sports_centre_kop?srtk=MWhjYW5mN2lpYmhsZA==';
 const API_URL = 'https://script.google.com/macros/s/AKfycbxKL-uC53lSZCHTMwSUYcgNJIlT7CsxgTaMRSy9wIBmgUsoEWxjBMEb5lN9sySXlbVr/exec';
 let staffAccessCode='';
-try { staffAccessCode=sessionStorage.getItem('sports-centre-access')||''; } catch {}
+try { staffAccessCode=localStorage.getItem('sports-centre-access')||''; } catch {}
+if(!staffAccessCode){try { staffAccessCode=sessionStorage.getItem('sports-centre-access')||''; } catch {}}
+function rememberAccessCode() {
+  if(!staffAccessCode)return;
+  try {localStorage.setItem('sports-centre-access',staffAccessCode);}catch{}
+  try {sessionStorage.setItem('sports-centre-access',staffAccessCode);}catch{}
+}
+function clearAccessCode() {
+  staffAccessCode='';
+  try{localStorage.removeItem('sports-centre-access');}catch{}
+  try{sessionStorage.removeItem('sports-centre-access');}catch{}
+}
 const live = typeof google !== 'undefined' && !!google.script?.run;
 const state = { leads: [], filter: 'today', tab: 'enquiries', editing: null, busy: false, ready: false, lastSaved: null, requestId: null, updateRequestId: null };
 const $ = id => document.getElementById(id);
@@ -42,7 +53,7 @@ async function api(action,payload={}) {
   } finally {clearTimeout(timeout);}
 }
 function showAccessDialog() {
-  $('accessCode').value='';$('accessError').hidden=true;
+  $('accessCode').value='';$('accessError').hidden=true;$('forgetAccessBtn').hidden=!staffAccessCode;
   if(!$('accessDialog').open)$('accessDialog').showModal();
 }
 async function loadLeads() {
@@ -51,10 +62,10 @@ async function loadLeads() {
   try {
     const result=await api('getLeads');
     if(!Array.isArray(result.leads))throw Error('Invalid response from the script. Check the deployed Code.gs version.');
-    state.leads=result.leads;state.ready=true;render();$('connection').textContent='Google Sheets connected';$('modeBanner').hidden=true;return true;
+    state.leads=result.leads;state.ready=true;rememberAccessCode();render();$('connection').textContent='Google Sheets connected';$('modeBanner').hidden=true;return true;
   } catch(error) {
     state.ready=false;$('connection').textContent='Not connected';$('modeBanner').hidden=false;$('connectionHelp').textContent=error.message;
-    if(error.code==='AUTH_REQUIRED'){showAccessDialog();$('accessError').textContent=error.message;$('accessError').hidden=false;}
+    if(error.code==='AUTH_REQUIRED'){clearAccessCode();state.leads=[];render();showAccessDialog();$('accessError').textContent=error.message;$('accessError').hidden=false;}
     else toast(error.message,true);
     return false;
   } finally {syncButtons();}
@@ -64,10 +75,8 @@ async function connectSheets(event) {
   $('connectBtn').disabled=true;$('connectBtn').textContent='Connecting...';$('accessError').hidden=true;
   try {
     if(await loadLeads()) {
-      try{sessionStorage.setItem('sports-centre-access',staffAccessCode);}catch{}
       $('accessDialog').close();$('accessCode').value='';toast('Connected to Google Sheets.');
     } else {
-      try{sessionStorage.removeItem('sports-centre-access');}catch{}
       $('accessError').textContent=$('connectionHelp').textContent;$('accessError').hidden=false;
     }
   } finally {$('connectBtn').disabled=false;$('connectBtn').textContent='Connect';}
@@ -104,6 +113,7 @@ async function saveUpdate(event){event.preventDefault();if(state.busy)return;con
 function init(){
   $('interestedIn').innerHTML='<option value="">Select a service</option>'+SERVICES.map(s=>`<option value="${s}">${s}</option>`).join('');
   $('todayLabel').textContent=new Date().toLocaleDateString('en-IN',{weekday:'short',day:'numeric',month:'short',year:'numeric',timeZone:'Asia/Kolkata'});$('followUpDate').min=todayKey();$('followUpDate').value=addDays(todayKey(),1);$('modeBanner').hidden=false;
+  $('forgetAccessBtn').addEventListener('click',()=>{clearAccessCode();state.ready=false;state.leads=[];render();syncButtons();$('connection').textContent='Not connected';$('modeBanner').hidden=false;showAccessDialog();});
   $('staffAccessBtn').addEventListener('click',showAccessDialog);$('accessForm').addEventListener('submit',connectSheets);
   $('enquiryForm').addEventListener('submit',saveEnquiry);$('updateForm').addEventListener('submit',saveUpdate);$('refreshBtn').addEventListener('click',loadLeads);
   document.querySelectorAll('[data-tab]').forEach(b=>b.addEventListener('click',()=>switchTab(b.dataset.tab)));
