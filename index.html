@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#bd2935">
+  <title>Sports Centre | Lead Manager</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="app-header">
+    <div class="header-inner"><div class="brand-lockup"><img class="brand-logo" src="assets/sports-centre-logo.svg" alt="Sports Centre logo" width="48" height="52"><div><strong class="brand">Sports Centre</strong><span class="app-name">Lead Manager</span></div></div><div class="header-actions"><span id="connection" class="connection">Not connected</span><button id="staffAccessBtn" class="secondary" type="button">Staff access</button><button id="refreshBtn" class="secondary" type="button">Refresh</button></div></div>
+    <nav class="tabs" aria-label="Main navigation"><button class="nav-item active" data-tab="enquiries">Enquiries</button><button class="nav-item" data-tab="followups">Follow-ups <span id="navCount" class="nav-count">0</span></button></nav>
+  </header>
+  <div class="shell">
+    <main>
+      <div class="page-heading"><h1 id="pageTitle">New enquiry</h1><span id="todayLabel"></span></div>
+      <div id="modeBanner" class="mode-banner"><span id="connectionHelp">Connect with your staff access code to save enquiries to Google Sheets.</span></div>
+      <section id="enquiriesPanel" class="enquiry-layout" aria-label="Enquiries">
+        <article class="panel form-panel">
+          <form id="enquiryForm">
+            <h2 class="form-section-title">Customer details</h2>
+            
+            <div class="form-grid"><label>Customer name <b>*</b><input id="name" name="name" autocomplete="name" placeholder="e.g. Rahul Patil" maxlength="100" required></label><label>Contact number <b>*</b><div class="phone-field"><span>+91</span><input id="contact" name="contact" type="tel" autocomplete="tel-national" placeholder="10-digit mobile number" inputmode="tel" maxlength="16" required></div></label></div>
+            <h2 class="form-section-title enquiry-section">Enquiry details</h2>
+            <label class="interest-label">Interested in <b>*</b><select id="interestedIn" name="interestedIn" required><option value="">Select a service</option></select></label>
+            
+            <div class="form-grid"><label>Follow-up date <b>*</b><input id="followUpDate" name="followUpDate" type="date" required></label><label>Enquiry source<select id="source" name="source"><option>Walk-in</option><option>Phone call</option><option>WhatsApp</option><option>Instagram</option><option>Google</option><option>Referral</option><option>Other</option></select></label></div>
+            <label class="notes-label">Requirements / notes <span class="optional">Optional</span><textarea id="notes" name="notes" rows="3" maxlength="2000" placeholder="What does the customer need?"></textarea></label>
+            <div class="form-footer"><p>A WhatsApp message will be ready after saving.</p><button class="primary" id="saveEnquiry" type="submit">Save enquiry</button></div>
+          </form>
+        </article>
+      </section>
+      <section id="followupsPanel" hidden aria-label="Follow-ups"><div class="stats" aria-label="Lead summary"><div>Yesterday<strong id="yesterdayStat">0</strong></div><div>Today<strong id="todayStat">0</strong></div><div>Tomorrow<strong id="tomorrowStat">0</strong></div><div>Overdue<strong id="overdueStat">0</strong></div><div>Converted<strong id="wonStat">0</strong></div><div>Total enquiries<strong id="totalStat">0</strong></div></div><article class="panel followup-panel"><div class="filter-bar" id="filters"><button class="filter active" data-filter="today">Today</button><button class="filter" data-filter="yesterday">Yesterday</button><button class="filter" data-filter="overdue">Overdue</button><button class="filter" data-filter="tomorrow">Tomorrow</button><button class="filter" data-filter="pending">All open</button><button class="filter" data-filter="converted">Converted</button><button class="filter" data-filter="all">All leads</button></div><div class="search-row"><label class="search-label">Search<input id="search" type="search" placeholder="Search name, phone or service…"></label><label class="filter-date">Follow-up on <input id="dateFilter" type="date"></label><button id="clearFilters" class="secondary">Clear</button></div><div class="list-caption"><div><span>SHOWING</span><h2 id="filterTitle">Today</h2></div><span id="resultCount"></span></div><div id="leadList" class="lead-list"></div></article></section>
+    </main>
+  </div>
+  <dialog id="updateDialog"><form id="updateForm"><div class="dialog-top"><div><h2 id="updateTitle">Update follow-up</h2></div><button type="button" class="icon-btn" data-close="updateDialog" aria-label="Close">×</button></div><p id="updateContact" class="muted"></p><label>Status<select id="updateStatus"><option>New</option><option>Contacted</option><option>Quotation sent</option><option>Call later</option><option>Converted</option><option>Not interested</option><option>Wrong number</option></select></label><label>Next follow-up date<input id="updateDate" type="date" required></label><label>Follow-up notes / reason <b>*</b><textarea id="updateReason" rows="3" maxlength="2000" required placeholder="What was discussed? Why is another follow-up needed?"></textarea></label><details class="history-block"><summary>Previous follow-ups</summary><div id="historyList"></div></details><div class="dialog-actions"><button type="button" class="secondary" data-close="updateDialog">Cancel</button><button class="primary" id="saveUpdate" type="submit">Save follow-up</button></div></form></dialog>
+  <dialog id="whatsappDialog" aria-labelledby="whatsappTitle"><h2 id="whatsappTitle">Send WhatsApp message?</h2><div class="dialog-actions"><button type="button" class="secondary" data-close="whatsappDialog">Cancel</button><a id="whatsappLink" class="primary whatsapp" target="_blank" rel="noopener noreferrer">Send WhatsApp message</a></div></dialog>
+  <dialog id="accessDialog"><form id="accessForm"><div class="dialog-top"><h2>Connect to Google Sheets</h2><button class="icon-btn" type="button" data-close="accessDialog" aria-label="Close">×</button></div><p class="muted">Enter the staff access code provided by your administrator.</p><label>Staff access code<input id="accessCode" type="password" autocomplete="off" required></label><p id="accessError" class="field-error" role="alert" hidden></p><div class="dialog-actions"><button class="primary" id="connectBtn" type="submit">Connect</button></div></form></dialog>
+  <div id="toast" role="status" aria-live="polite" hidden></div>
+  <script src="script.js"></script>
+</body>
+</html>
