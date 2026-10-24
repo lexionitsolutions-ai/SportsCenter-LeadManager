@@ -5,7 +5,7 @@ const STATUSES_ = ['New','Contacted','Quotation sent','Call later','Converted','
 const CLOSED_ = ['Converted','Not interested','Wrong number'];
 
 function doGet() {
-  // This serves only the app shell. Every data request is authenticated below.
+  // Public app shell. Lead access is open to anyone, as requested.
   return HtmlService.createHtmlOutputFromFile('App').setTitle('Sports Centre | Lead Manager').addMetaTag('viewport','width=device-width, initial-scale=1');
 }
 
@@ -14,7 +14,6 @@ function doPost(e) {
   let result;
   try {
     const request=JSON.parse(e && e.parameter && e.parameter.payload || '{}');
-    authorizeKey_(request.apiKey);
     result=handleRequest(request);
   } catch(error) {
     result={success:false,message:error.message,code:error.code||'REQUEST_ERROR'};
@@ -28,37 +27,17 @@ function setup() {
   if (!spreadsheet) throw new Error('Open Apps Script from your Google Sheet using Extensions > Apps Script.');
   const props=PropertiesService.getScriptProperties();
   props.setProperty('SPREADSHEET_ID',spreadsheet.getId());
-  if (!props.getProperty('API_KEY')) props.setProperty('API_KEY',Utilities.getUuid().replace(/-/g,'')+Utilities.getUuid().replace(/-/g,''));
-  const owner=Session.getEffectiveUser().getEmail();
-  if (!props.getProperty('ALLOWED_EMAILS') && owner) props.setProperty('ALLOWED_EMAILS',owner.toLowerCase());
   spreadsheet.setSpreadsheetTimeZone('Asia/Kolkata');
   const sheet=sheet_();
   sheet.setFrozenRows(1);sheet.getRange(1,1,1,LEAD_HEADERS_.length).setBackground('#202127').setFontColor('#ffffff').setFontWeight('bold');
   sheet.setColumnWidth(4,180);sheet.setColumnWidth(6,250);sheet.setColumnWidth(10,300);
 }
 
-function authorizeKey_(key) {
-  const expected=PropertiesService.getScriptProperties().getProperty('API_KEY');
-  if (!expected || expected.length<32 || typeof key!=='string' || key!==expected) {
-    const error=new Error('Enter the correct staff access code. The administrator can find API_KEY in Apps Script > Project Settings > Script Properties after running setup.');
-    error.code='AUTH_REQUIRED';throw error;
-  }
-  return 'Staff access code';
-}
-
-function authorize_(key) {
-  if(key) return authorizeKey_(key);
-  const email=Session.getActiveUser().getEmail().toLowerCase();
-  const allowed=(PropertiesService.getScriptProperties().getProperty('ALLOWED_EMAILS')||'').split(',').map(s=>s.trim().toLowerCase()).filter(Boolean);
-  if (!email || !allowed.includes(email)) {const error=new Error('Connect using your staff access code.');error.code='AUTH_REQUIRED';throw error;}
-  return email;
-}
-
-/** Only public data entry point. All callers must be authenticated and allowlisted. */
+/** Public endpoint: anyone can read, create, and update leads. */
 function handleRequest(request) {
   let lock;
   try {
-    const actor=authorize_(request && request.apiKey);
+    const actor='Staff';
     if (!request || !['getLeads','createLead','updateLead'].includes(request.action)) throw new Error('Unknown action.');
     lock=LockService.getScriptLock();lock.waitLock(30000);
     const sheet=sheet_();

@@ -5,19 +5,9 @@ const CLOSED = ['Converted', 'Not interested', 'Wrong number'];
 const WEBSITE = 'https://zenithfitness360.lexionitsolutions.workers.dev/?utm_source=ig&utm_medium=social&utm_content=link_in_bio&fbclid=PAdGRleAVJ1P5leHRuA2FlbQIxMQBwZG9mAmZkaWQWUQ7sUfKgu9XNtPwyAdD71XR4Vl2KqXNydGMGYXBwX2lkDzEyNDAyNDU3NDI4NzQxNAABp1A9mkMTcAKzoGKrVvxCIDYp5wCXud4nNSYMNGEVoLKEotFoZ95ZnNaZiBLp_aem_OZg-6nOFSbKYcGykYAgdfQ';
 const INSTAGRAM = 'https://www.instagram.com/sports_centre_kop?srtk=MWhjYW5mN2lpYmhsZA==';
 const API_URL = 'https://script.google.com/macros/s/AKfycbxKL-uC53lSZCHTMwSUYcgNJIlT7CsxgTaMRSy9wIBmgUsoEWxjBMEb5lN9sySXlbVr/exec';
-let staffAccessCode='';
-try { staffAccessCode=localStorage.getItem('sports-centre-access')||''; } catch {}
-if(!staffAccessCode){try { staffAccessCode=sessionStorage.getItem('sports-centre-access')||''; } catch {}}
-function rememberAccessCode() {
-  if(!staffAccessCode)return;
-  try {localStorage.setItem('sports-centre-access',staffAccessCode);}catch{}
-  try {sessionStorage.setItem('sports-centre-access',staffAccessCode);}catch{}
-}
-function clearAccessCode() {
-  staffAccessCode='';
-  try{localStorage.removeItem('sports-centre-access');}catch{}
-  try{sessionStorage.removeItem('sports-centre-access');}catch{}
-}
+// Remove access codes remembered by older versions of this app.
+try{localStorage.removeItem('sports-centre-access');}catch{}
+try{sessionStorage.removeItem('sports-centre-access');}catch{}
 const live = typeof google !== 'undefined' && !!google.script?.run;
 const state = { leads: [], filter: 'today', tab: 'enquiries', editing: null, busy: false, ready: false, lastSaved: null, requestId: null, updateRequestId: null };
 const $ = id => document.getElementById(id);
@@ -36,7 +26,7 @@ function apiError(result) {
   const error=new Error(result.message||'Could not complete the request.');error.code=result.code;return error;
 }
 async function api(action,payload={}) {
-  const request={action,...payload,apiKey:staffAccessCode};
+  const request={action,...payload};
   if(live) return new Promise((resolve,reject)=>google.script.run.withSuccessHandler(result=>{if(result.success)resolve(result);else reject(apiError(result));}).withFailureHandler(e=>reject(Error(e.message||'Connection failed.'))).handleRequest(request));
   // URL-encoded POST avoids a JSON preflight; Google redirects its JSON response.
   const body=new URLSearchParams({payload:JSON.stringify(request)});
@@ -52,34 +42,19 @@ async function api(action,payload={}) {
     throw error;
   } finally {clearTimeout(timeout);}
 }
-function showAccessDialog() {
-  $('accessCode').value='';$('accessError').hidden=true;$('forgetAccessBtn').hidden=!staffAccessCode;
-  if(!$('accessDialog').open)$('accessDialog').showModal();
-}
 async function loadLeads() {
   if(state.busy)return false;
   $('refreshBtn').disabled=true;$('connection').textContent='Connecting...';
   try {
     const result=await api('getLeads');
     if(!Array.isArray(result.leads))throw Error('Invalid response from the script. Check the deployed Code.gs version.');
-    state.leads=result.leads;state.ready=true;rememberAccessCode();render();$('connection').textContent='Google Sheets connected';$('modeBanner').hidden=true;return true;
+    state.leads=result.leads;state.ready=true;render();$('connection').textContent='Google Sheets connected';$('modeBanner').hidden=true;return true;
   } catch(error) {
-    state.ready=false;$('connection').textContent='Not connected';$('modeBanner').hidden=false;$('connectionHelp').textContent=error.message;
-    if(error.code==='AUTH_REQUIRED'){clearAccessCode();state.leads=[];render();showAccessDialog();$('accessError').textContent=error.message;$('accessError').hidden=false;}
-    else toast(error.message,true);
+    state.ready=false;$('connection').textContent='Not connected';$('modeBanner').hidden=false;
+    const message=error.code==='AUTH_REQUIRED'?'The deployed script still requires a code. Replace Code.gs with the latest version and deploy a new version.':error.message;
+    $('connectionHelp').textContent=message;toast(message,true);
     return false;
   } finally {syncButtons();}
-}
-async function connectSheets(event) {
-  event.preventDefault();staffAccessCode=$('accessCode').value.trim();if(!staffAccessCode)return;
-  $('connectBtn').disabled=true;$('connectBtn').textContent='Connecting...';$('accessError').hidden=true;
-  try {
-    if(await loadLeads()) {
-      $('accessDialog').close();$('accessCode').value='';toast('Connected to Google Sheets.');
-    } else {
-      $('accessError').textContent=$('connectionHelp').textContent;$('accessError').hidden=false;
-    }
-  } finally {$('connectBtn').disabled=false;$('connectBtn').textContent='Connect';}
 }
 function syncButtons(){ $('saveEnquiry').disabled=state.busy||!state.ready;$('saveUpdate').disabled=state.busy||!state.ready;$('refreshBtn').disabled=state.busy; }
 function switchTab(tab) {state.tab=tab==='followups'?'followups':'enquiries';const follow=state.tab==='followups';$('enquiriesPanel').hidden=follow;$('followupsPanel').hidden=!follow;document.querySelectorAll('[data-tab]').forEach(b=>{b.classList.toggle('active',b.dataset.tab===state.tab);b.setAttribute('aria-current',b.dataset.tab===state.tab?'page':'false');});$('pageTitle').textContent=follow?'Follow-ups':'New enquiry';if(location.hash!=='#'+state.tab)history.replaceState(null,'','#'+state.tab);render();}
@@ -113,8 +88,6 @@ async function saveUpdate(event){event.preventDefault();if(state.busy)return;con
 function init(){
   $('interestedIn').innerHTML='<option value="">Select a service</option>'+SERVICES.map(s=>`<option value="${s}">${s}</option>`).join('');
   $('todayLabel').textContent=new Date().toLocaleDateString('en-IN',{weekday:'short',day:'numeric',month:'short',year:'numeric',timeZone:'Asia/Kolkata'});$('followUpDate').min=todayKey();$('followUpDate').value=addDays(todayKey(),1);$('modeBanner').hidden=false;
-  $('forgetAccessBtn').addEventListener('click',()=>{clearAccessCode();state.ready=false;state.leads=[];render();syncButtons();$('connection').textContent='Not connected';$('modeBanner').hidden=false;showAccessDialog();});
-  $('staffAccessBtn').addEventListener('click',showAccessDialog);$('accessForm').addEventListener('submit',connectSheets);
   $('enquiryForm').addEventListener('submit',saveEnquiry);$('updateForm').addEventListener('submit',saveUpdate);$('refreshBtn').addEventListener('click',loadLeads);
   document.querySelectorAll('[data-tab]').forEach(b=>b.addEventListener('click',()=>switchTab(b.dataset.tab)));
   $('filters').addEventListener('click',e=>{const b=e.target.closest('[data-filter]');if(b){state.filter=b.dataset.filter;$('dateFilter').value='';render();}});$('search').addEventListener('input',render);$('dateFilter').addEventListener('change',render);$('clearFilters').addEventListener('click',()=>{$('search').value='';$('dateFilter').value='';state.filter='today';render();});
@@ -123,7 +96,7 @@ function init(){
   $('updateStatus').addEventListener('change',updateDateRequirement);$('contact').addEventListener('input',()=>$('contact').setCustomValidity(''));$('name').addEventListener('input',()=>$('name').setCustomValidity(''));$('updateReason').addEventListener('input',()=>$('updateReason').setCustomValidity(''));
   $('enquiryForm').addEventListener('input',()=>{state.requestId=null;});$('updateForm').addEventListener('input',()=>{state.updateRequestId=uuid();});
   $('whatsappLink').addEventListener('click',()=>$('whatsappDialog').close());
-  window.addEventListener('hashchange',()=>switchTab(location.hash.slice(1)));switchTab(location.hash.slice(1));syncButtons();if(live||staffAccessCode)loadLeads();else showAccessDialog();
+  window.addEventListener('hashchange',()=>switchTab(location.hash.slice(1)));switchTab(location.hash.slice(1));syncButtons();loadLeads();
 }
 if(typeof document!=='undefined')document.addEventListener('DOMContentLoaded',init);
 if(typeof module!=='undefined')module.exports={phoneNumber,addDays,todayKey,introduction,escapeHtml,openLead,SERVICES};

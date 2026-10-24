@@ -17,7 +17,7 @@ assert.equal(app.openLead({status:'Converted'}),false);
 assert.equal(app.openLead({status:'Wrong number'}),false);
 assert.equal(app.openLead({status:'Quotation sent'}),true);
 
-const props={SPREADSHEET_ID:'test-sheet',ALLOWED_EMAILS:'staff@example.com',API_KEY:'test-access-code-at-least-32-characters-long'};
+const props={SPREADSHEET_ID:'test-sheet'};
 let email='staff@example.com', rows=[], uid=0;
 const sheet={
  getLastRow:()=>rows.length,
@@ -32,7 +32,6 @@ const context={console,Session:{getActiveUser:()=>({getEmail:()=>email})},Proper
 vm.createContext(context);vm.runInContext(fs.readFileSync('Code.gs','utf8'),context);
 rows.push(['id','createdAt','updatedAt','name','contact','interestedIn','source','followUpDate','status','notes','version','requestId','history']);
 const call=p=>context.handleRequest(p);
-email='intruder@example.com';assert.equal(call({action:'getLeads'}).success,false);email='';assert.equal(call({action:'getLeads'}).success,false);email='staff@example.com';
 assert.equal(call({action:'getLeads'}).leads.length,0);
 const input={action:'createLead',name:'Rahul',contact:'9876543210',interestedIn:['Gym Setup'],source:'Walk-in',notes:'=IMPORTXML("bad")',followUpDate:app.addDays(app.todayKey(),1),requestId:'request-1'};
 let result=call(input);assert.equal(result.success,true);const id=result.lead.id;
@@ -52,17 +51,13 @@ result=call({...update,requestId:'reopen',version:3,status:'Call later',reason:'
 assert.equal(call({action:'deleteAll'}).success,false);
 context.ContentService={MimeType:{JSON:'json'},createTextOutput:body=>({body,setMimeType(){return this;}})};
 const post=p=>JSON.parse(context.doPost({parameter:{payload:JSON.stringify(p)}}).body);
-// HTTP always requires a key, even if Google happens to expose an allowed email.
-assert.equal(post({action:'getLeads'}).code,'AUTH_REQUIRED');
-assert.equal(post({action:'getLeads',apiKey:'wrong'}).success,false);
-email='';
-assert.equal(post({action:'getLeads',apiKey:props.API_KEY}).success,true);
-const httpCreate=post({...input,requestId:'http-create',apiKey:props.API_KEY});
+assert.equal(post({action:'getLeads'}).success,true);
+const httpCreate=post({...input,requestId:'http-create'});
 assert.equal(httpCreate.success,true);
-assert.equal(post({...input,requestId:'http-create',apiKey:props.API_KEY}).lead.id,httpCreate.lead.id);
-const httpUpdate=post({...update,id:httpCreate.lead.id,version:1,requestId:'http-update',apiKey:props.API_KEY});
+assert.equal(post({...input,requestId:'http-create'}).lead.id,httpCreate.lead.id);
+const httpUpdate=post({...update,id:httpCreate.lead.id,version:1,requestId:'http-update'});
 assert.equal(httpUpdate.success,true);
-assert.equal(httpUpdate.lead.history[0].by,'Staff access code');
+assert.equal(httpUpdate.lead.history[0].by,'Staff');
 assert.equal(JSON.parse(context.doPost({parameter:{payload:'invalid json'}}).body).success,false);
-assert.equal(call({action:'getLeads',apiKey:'wrong'}).success,false);
-console.log('Core, backend and authenticated HTTP create/read/update checks passed.');
+assert.equal(post({action:'deleteAll'}).success,false);
+console.log('Core, backend and public HTTP create/read/update checks passed.');
